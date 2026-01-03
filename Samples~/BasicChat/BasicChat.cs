@@ -39,28 +39,28 @@ public class BasicChat : MonoBehaviour
         }
     }
 
-    void OnBotStatusChanged(ChatCompletion.Status status)
+    void OnBotStatusChanged(ModelStatus status)
     {
         switch (status)
         {
-            case ChatCompletion.Status.Loading:
+            case ModelStatus.Loading:
                 {
                     sendButton.interactable = false;
                 }
                 break;
-            case ChatCompletion.Status.Ready:
+            case ModelStatus.Ready:
                 {
                     sendButton.interactable = true;
 
                     ClearInput();
                 }
                 break;
-            case ChatCompletion.Status.Generate:
+            case ModelStatus.Generate:
                 {
                     sendButton.interactable = false;
                 }
                 break;
-            case ChatCompletion.Status.Error:
+            case ModelStatus.Error:
                 {
                     sendButton.interactable = true;
                 }

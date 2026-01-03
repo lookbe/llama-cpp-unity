@@ -1,20 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
 
 namespace LlamaCpp
 {
-    public class ChatCompletion : BackgroundRunner
+    public class Completion : BackgroundRunner
     {
         [Header("Model")]
         [Tooltip("GGUF model absolute path")]
         public string modelPath = string.Empty;
 
         [Header("Context")]
-        [TextArea(10, 20)]
-        public string systemPrompt = string.Empty;
         public uint contextLength = 4096;
 
         [Header("Sampling")]
@@ -71,16 +68,10 @@ namespace LlamaCpp
         IntPtr _llamaModel = IntPtr.Zero;
         IntPtr _llamaVocab = IntPtr.Zero;
         IntPtr _llamaContext = IntPtr.Zero;
-        IntPtr _chatTemplate = IntPtr.Zero;
-
-        Sampling.common_sampler common_sampler;
+        IntPtr _llamaSampler = IntPtr.Zero;
 
         uint n_ctx = 4096;
         int n_batch = 512;
-        int n_past = 0;
-        int n_keep = 1;
-
-        List<Chat.common_chat_msg> chat_msgs = new();
 
         private void PostResponseStream(string response)
         {
@@ -134,9 +125,6 @@ namespace LlamaCpp
 
                 _llamaVocab = Native.llama_model_get_vocab(_llamaModel);
 
-                _chatTemplate = Native.llama_model_chat_template(_llamaModel, null);
-                string template = Marshal.PtrToStringUTF8(_chatTemplate);
-
                 Sampling.common_params_sampling sampling = Sampling.common_params_sampling.create_default();
                 sampling.temp = temperature;
                 sampling.top_k = topK;
@@ -144,24 +132,15 @@ namespace LlamaCpp
                 sampling.min_p = minP;
                 sampling.penalty_repeat = repeatPenalty;
 
-                common_sampler = Sampling.common_sampler_init(_llamaModel, sampling);
-
-                string intialPrompt = "";
-                if (!string.IsNullOrEmpty(systemPrompt))
-                {
-                    var msg = new Chat.common_chat_msg() { role = "system", content = systemPrompt };
-                    intialPrompt = Chat.common_chat_format_single(_chatTemplate, chat_msgs.ToArray(), msg , false);
-                    chat_msgs.Add(msg);
-                }
-
-                // this step quite crucial to keep consistent generation
-                int[] initial_token = Common.common_tokenize(_llamaVocab, intialPrompt, true, true);
-                for (int i = 0; i < initial_token.Length; i++)
-                {
-                    Sampling.common_sampler_accept(ref common_sampler, initial_token[i], false);
-                }
-
-                embd.AddRange(initial_token);
+                Native.llama_sampler_chain_add(_llamaSampler, Native.llama_sampler_init_top_k(sampling.top_k));
+                Native.llama_sampler_chain_add(_llamaSampler, Native.llama_sampler_init_top_p(sampling.top_p, sampling.min_keep));
+                Native.llama_sampler_chain_add(_llamaSampler, Native.llama_sampler_init_min_p(sampling.min_p, sampling.min_keep));
+                Native.llama_sampler_chain_add(_llamaSampler, Native.llama_sampler_init_typical(sampling.typ_p, sampling.min_keep));
+                Native.llama_sampler_chain_add(_llamaSampler, Native.llama_sampler_init_temp_ext(sampling.temp, sampling.dynatemp_range, sampling.dynatemp_exponent));
+                Native.llama_sampler_chain_add(_llamaSampler, Native.llama_sampler_init_xtc(sampling.xtc_probability, sampling.xtc_threshold, sampling.min_keep, sampling.seed));
+                Native.llama_sampler_chain_add(_llamaSampler, Native.llama_sampler_init_penalties(sampling.penalty_last_n, sampling.penalty_repeat, sampling.penalty_freq, sampling.penalty_present));
+                Native.llama_sampler_chain_add(_llamaSampler, Native.llama_sampler_init_top_n_sigma(sampling.top_n_sigma));
+                Native.llama_sampler_chain_add(_llamaSampler, Native.llama_sampler_init_dist(sampling.seed)); // this must be last
 
                 Debug.Log("Load model done");
 
@@ -178,7 +157,11 @@ namespace LlamaCpp
 
         void FreeModel()
         {
-            Sampling.common_sampler_free(ref common_sampler);
+            if (_llamaSampler != IntPtr.Zero)
+            {
+                Native.llama_sampler_free(_llamaSampler);
+                _llamaSampler = IntPtr.Zero;
+            }
 
             if (_llamaContext != IntPtr.Zero)
             {
@@ -248,95 +231,53 @@ namespace LlamaCpp
             for (int i = 0; i < batches.Count; i++)
             {
                 int[] current_batches = batches[i];
-                if (n_past + current_batches.Length > n_ctx)
-                {
-                    Debug.Log("context shift");
-
-                    int n_left = n_past - n_keep;
-                    int n_discard = n_left / 2;
-
-                    Native.llama_memory_seq_rm(Native.llama_get_memory(_llamaContext), 0, n_keep, n_keep + n_discard);
-                    Native.llama_memory_seq_add(Native.llama_get_memory(_llamaContext), 0, n_keep + n_discard, n_past, -n_discard);
-
-                    n_past -= n_discard;
-                }
-
-                n_past += current_batches.Length;
                 Native.llama_batch llama_batch = Native.llama_batch_get_one(current_batches, current_batches.Length);
                 int decode_result = Native.llama_decode(_llamaContext, llama_batch);
                 if (decode_result != 0)
                 {
-                    throw new Exception($"decode error result {decode_result} used ctx {n_past}");
+                    throw new Exception($"decode error result {decode_result}");
                 }
             }
         }
 
-        List<int> embd = new();
-        List<int> embd_input = new();
+        protected virtual int[] Tokenize(string prompt)
+        {
+            return Common.common_tokenize(_llamaVocab, prompt, true, true);
+        }
 
         unsafe void RunPrompt(PromptPayload payload, CancellationToken cts)
         {
             string prompt = payload.Prompt;
             string response = "";
-            int[] token_list = new int[0];
+            int last_token = 0;
+            int[] token_list;
 
             try
             {
                 PostStatus(ModelStatus.Generate);
 
+                token_list = Tokenize(prompt);
+
                 while (true)
                 {
-                    if (!string.IsNullOrEmpty(prompt))
+                    if (cts.IsCancellationRequested)
                     {
-                        var input_msg = new Chat.common_chat_msg() { role = "user", content = prompt };
-
-                        string fmt_prompt = Chat.common_chat_format_single(_chatTemplate, chat_msgs.ToArray(), input_msg, true);
-                        chat_msgs.Add(input_msg);
-
-                        token_list = Common.common_tokenize(_llamaVocab, fmt_prompt, false, true);
-                        embd_input.AddRange(token_list);
-
-                        Sampling.common_sampler_reset(ref common_sampler);
-                        prompt = string.Empty;
-                    }
-
-                    if (embd.Count > 0)
-                    {
-                        try_decode(embd.ToArray());
-                    }
-
-                    embd.Clear();
-
-                    if (embd_input.Count == 0)
-                    {
-                        int last_token = Sampling.common_sampler_sample(ref common_sampler, _llamaContext, -1, false);
-                        string piece = Common.common_token_to_piece(_llamaVocab, last_token, false);
-
-                        response += piece;
-                        PostResponseStream(piece);
-
-                        Sampling.common_sampler_accept(ref common_sampler, last_token, true);
-                        embd.Add(last_token);
-                    }
-                    else
-                    {
-                        int[] input_token = embd_input.ToArray();
-                        for (int i = 0; i < token_list.Length; i++)
-                        {
-                            Sampling.common_sampler_accept(ref common_sampler, input_token[i], false);
-                        }
-                        embd.AddRange(input_token);
-                        embd_input.Clear();
-                    }
-
-                    // break here since we want to decode eog token before stop generate
-                    if (Native.llama_vocab_is_eog(_llamaVocab, Sampling.common_sampler_last(ref common_sampler)))
-                    {
-                        chat_msgs.Add(new Chat.common_chat_msg() { role = "assistant", content = response });
                         break;
                     }
 
-                    if (cts.IsCancellationRequested)
+                    try_decode(token_list);
+
+                    last_token = Native.llama_sampler_sample(_llamaSampler, _llamaContext, -1);
+                    string piece = Common.common_token_to_piece(_llamaVocab, last_token, false);
+                    response += piece;
+
+                    PostResponseStream(piece);
+
+                    // create next stream
+                    token_list = new[] { last_token };
+
+                    // break here since we want to decode eog token before stop generate
+                    if (Native.llama_vocab_is_eog(_llamaVocab, last_token))
                     {
                         break;
                     }
@@ -348,6 +289,8 @@ namespace LlamaCpp
             }
             finally
             {
+                Native.llama_memory_seq_rm(Native.llama_get_memory(_llamaContext), 0, -1, -1);
+
                 PostResponse(response);
                 PostStatus(ModelStatus.Ready);
             }
