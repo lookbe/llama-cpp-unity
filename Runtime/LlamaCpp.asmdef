@@ -1,0 +1,17 @@
+{
+    "name": "LlamaCpp",
+    "rootNamespace": "",
+    "references": [
+        "GUID:3de88c88fbbb8f944b9210d496af9762",
+        "GUID:250e096504da3aa4f851a4df12262950"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,15 @@
+{
+    "name": "ai.lookbe.llamacpp",
+    "version": "0.0.1",
+    "displayName": "LlamaCpp Unity",
+    "description": "Unity wrapper for llama.cpp",
+    "unity": "2021.3",
+    "keywords": [
+        "llama",
+        "llm",
+        "ai"
+    ],
+    "author": {
+        "name": "lookbe"
+    }
+}
