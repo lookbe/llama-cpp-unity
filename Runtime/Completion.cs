@@ -132,6 +132,9 @@ namespace LlamaCpp
                 sampling.min_p = minP;
                 sampling.penalty_repeat = repeatPenalty;
 
+                Native.llama_sampler_chain_params sparams = Native.llama_sampler_chain_default_params();
+                _llamaSampler = Native.llama_sampler_chain_init(sparams);
+
                 Native.llama_sampler_chain_add(_llamaSampler, Native.llama_sampler_init_top_k(sampling.top_k));
                 Native.llama_sampler_chain_add(_llamaSampler, Native.llama_sampler_init_top_p(sampling.top_p, sampling.min_keep));
                 Native.llama_sampler_chain_add(_llamaSampler, Native.llama_sampler_init_min_p(sampling.min_p, sampling.min_keep));
