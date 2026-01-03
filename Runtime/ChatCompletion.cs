@@ -18,6 +18,22 @@ namespace LlamaCpp
             Generate,
         }
 
+        [Header("Model")]
+        [Tooltip("GGUF model absolute path")]
+        public string modelPath = string.Empty;
+
+        [Header("Context")]
+        [TextArea(10, 20)]
+        public string systemPrompt = string.Empty;
+        public uint contextLength = 4096;
+
+        [Header("Sampling")]
+        public float temperature = 0.8f;
+        public int topK = 40;
+        public float topP = 0.95f;
+        public float minP = 0.05f;
+        public float repeatPenalty = 1.0f;
+
         // Define a delegate (or use Action<T>)
         public delegate void StatusChangedDelegate(Status status);
         public event StatusChangedDelegate OnStatusChanged;
@@ -65,7 +81,7 @@ namespace LlamaCpp
         IntPtr _llamaModel = IntPtr.Zero;
         IntPtr _llamaVocab = IntPtr.Zero;
         IntPtr _llamaContext = IntPtr.Zero;
-        IntPtr _ChatTemplate = IntPtr.Zero;
+        IntPtr _chatTemplate = IntPtr.Zero;
 
         Sampling.common_sampler common_sampler;
 
@@ -86,13 +102,7 @@ namespace LlamaCpp
             unityContext?.Post(_ => OnResponseGenerated?.Invoke(response), null);
         }
 
-        private class InitPayload : IBackgroundPayload
-        {
-            public string ModelPath;
-            public string SystemPrompt;
-        }
-
-        public void InitModel(string modelPath, string systemPrompt)
+        public void InitModel()
         {
             if (string.IsNullOrEmpty(modelPath))
             {
@@ -106,24 +116,24 @@ namespace LlamaCpp
             }
 
             status = Status.Loading;
-            RunBackground(new InitPayload() { ModelPath = modelPath, SystemPrompt = systemPrompt }, RunInitModel);
+            RunBackground(RunInitModel);
         }
 
-        void RunInitModel(InitPayload payload, CancellationToken cts)
+        void RunInitModel(CancellationToken cts)
         {
             try
             {
-                Debug.Log($"Load model at {payload.ModelPath}");
+                Debug.Log($"Load model at {modelPath}");
 
                 Native.llama_model_params model_params = Native.llama_model_default_params();
-                _llamaModel = Native.llama_model_load_from_file(payload.ModelPath, model_params);
+                _llamaModel = Native.llama_model_load_from_file(modelPath, model_params);
                 if (_llamaModel == IntPtr.Zero)
                 {
                     throw new System.Exception("unable to load model");
                 }
 
                 Native.llama_context_params ctx_params = Native.llama_context_default_params();
-                ctx_params.n_ctx = 4096; // common context size
+                ctx_params.n_ctx = contextLength;
                 _llamaContext = Native.llama_init_from_model(_llamaModel, ctx_params);
                 if (_llamaContext == IntPtr.Zero)
                 {
@@ -134,34 +144,34 @@ namespace LlamaCpp
 
                 _llamaVocab = Native.llama_model_get_vocab(_llamaModel);
 
-                _ChatTemplate = Native.llama_model_chat_template(_llamaModel, null);
-                string template = Marshal.PtrToStringUTF8(_ChatTemplate);
+                _chatTemplate = Native.llama_model_chat_template(_llamaModel, null);
+                string template = Marshal.PtrToStringUTF8(_chatTemplate);
 
                 Sampling.common_params_sampling sampling = Sampling.common_params_sampling.create_default();
-                //sampling.seed = 42;
-                //sampling.penalty_repeat = 1.1f;
+                sampling.temp = temperature;
+                sampling.top_k = topK;
+                sampling.top_p = topP;
+                sampling.min_p = minP;
+                sampling.penalty_repeat = repeatPenalty;
+
                 common_sampler = Sampling.common_sampler_init(_llamaModel, sampling);
 
                 string intialPrompt = "";
-                if (!string.IsNullOrEmpty(payload.SystemPrompt))
+                if (!string.IsNullOrEmpty(systemPrompt))
                 {
-                    var msg = new Chat.common_chat_msg() { role = "system", content = payload.SystemPrompt };
-                    intialPrompt = Chat.common_chat_format_single(_ChatTemplate, chat_msgs.ToArray(), msg , false);
+                    var msg = new Chat.common_chat_msg() { role = "system", content = systemPrompt };
+                    intialPrompt = Chat.common_chat_format_single(_chatTemplate, chat_msgs.ToArray(), msg , false);
                     chat_msgs.Add(msg);
                 }
 
                 // this step quite crucial to keep consistent generation
                 int[] initial_token = Common.common_tokenize(_llamaVocab, intialPrompt, true, true);
-                //embd_input.AddRange(initial_token);
-
-                //int[] input_token = embd_input.ToArray();
                 for (int i = 0; i < initial_token.Length; i++)
                 {
                     Sampling.common_sampler_accept(ref common_sampler, initial_token[i], false);
                 }
 
                 embd.AddRange(initial_token);
-                //embd_input.Clear();
 
                 Debug.Log("Load model done");
 
@@ -290,7 +300,7 @@ namespace LlamaCpp
                     {
                         var input_msg = new Chat.common_chat_msg() { role = "user", content = prompt };
 
-                        string fmt_prompt = Chat.common_chat_format_single(_ChatTemplate, chat_msgs.ToArray(), input_msg, true);
+                        string fmt_prompt = Chat.common_chat_format_single(_chatTemplate, chat_msgs.ToArray(), input_msg, true);
                         chat_msgs.Add(input_msg);
 
                         token_list = Common.common_tokenize(_llamaVocab, fmt_prompt, false, true);

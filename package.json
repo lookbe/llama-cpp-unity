@@ -11,5 +11,11 @@
     ],
     "author": {
         "name": "lookbe"
-    }
+    },
+	"samples": [
+    {
+      "displayName": "Basic Chat",
+      "description": "Shows the basic chat usage.",
+      "path": "Samples~/BasicChat"
+    }]
 }
