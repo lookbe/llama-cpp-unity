@@ -41,6 +41,11 @@ On Android, you must do one of the following:
 
 ---
 
+# Credits
+
+* **[LlamaCpp](https://github.com/ggml-org/llama.cpp)** – LLM inference engine.
+
+---
 ## ☕ Support the Developer
 
 If this helps you, consider supporting me:
