@@ -223,6 +223,7 @@ namespace LlamaCpp
                 return;
             }
 
+            status = ModelStatus.Generate;
             RunBackground(new PromptPayload() { Prompt = prompt }, RunPrompt);
         }
 
@@ -282,8 +283,6 @@ namespace LlamaCpp
 
             try
             {
-                PostStatus(ModelStatus.Generate);
-
                 while (true)
                 {
                     if (!string.IsNullOrEmpty(prompt))

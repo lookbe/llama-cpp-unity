@@ -87,6 +87,7 @@ namespace LlamaCpp
         {
             if (string.IsNullOrEmpty(modelPath))
             {
+                Debug.LogError("model path not set");
                 return;
             }
 
@@ -209,6 +210,7 @@ namespace LlamaCpp
                 return;
             }
 
+            status = ModelStatus.Generate;
             RunBackground(new PromptPayload() { Prompt = prompt }, RunPrompt);
         }
 
@@ -248,6 +250,14 @@ namespace LlamaCpp
             return Common.common_tokenize(_llamaVocab, prompt, true, true);
         }
 
+        public virtual void Stop()
+        {
+            if (cts != null)
+            {
+                cts.Cancel();
+            }
+        }
+
         unsafe void RunPrompt(PromptPayload payload, CancellationToken cts)
         {
             string prompt = payload.Prompt;
@@ -257,8 +267,6 @@ namespace LlamaCpp
 
             try
             {
-                PostStatus(ModelStatus.Generate);
-
                 token_list = Tokenize(prompt);
 
                 while (true)

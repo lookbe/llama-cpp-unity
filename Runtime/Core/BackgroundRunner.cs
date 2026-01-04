@@ -11,7 +11,7 @@ namespace LlamaCpp
     {
         protected SynchronizationContext unityContext;
 
-        private CancellationTokenSource cts;
+        protected CancellationTokenSource cts;
         private Task backgroundTask;
         private bool isStopping = false;
 
