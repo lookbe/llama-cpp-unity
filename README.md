@@ -40,3 +40,9 @@ On Android, you must do one of the following:
 * **Downloading:** Create a downloader script and save the model asset directly into `persistentDataPath`.
 
 ---
+
+## ☕ Support the Developer
+
+If this helps you, consider supporting me:
+
+[<img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" width="200">](https://www.buymeacoffee.com/lookbe)
