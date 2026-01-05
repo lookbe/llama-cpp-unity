@@ -23,3 +23,31 @@ To install **llama-cpp-unity** using the Unity Package Manager (UPM):
 5. Click **Add**.
 
 ---
+
+## 🧪 Testing
+
+1. Import the **BasicChat** sample project from the Package Manager.
+2. Open the sample scene and locate the **ChatCompletion** component.
+3. Change the **Model Path** to the **absolute path** of your model.
+
+### Note on Mobile Paths (Android)
+While you can extend the component to use `Application.streamingAssetsPath` on Desktop, **Android cannot load models directly from StreamingAssets**. You must use `Application.persistentDataPath` for the model path.
+
+On Android, you must do one of the following:
+
+* **Copying:** Copy the model from `StreamingAssets` to `persistentDataPath` first, before doing any model loading.
+**OR**
+* **Downloading:** Create a downloader script and save the model asset directly into `persistentDataPath`.
+
+---
+
+# Credits
+
+* **[LlamaCpp](https://github.com/ggml-org/llama.cpp)** – LLM inference engine.
+
+---
+## ☕ Support the Developer
+
+If this helps you, consider supporting me:
+
+[<img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" width="200">](https://www.buymeacoffee.com/lookbe)
