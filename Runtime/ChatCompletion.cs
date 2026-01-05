@@ -68,9 +68,9 @@ namespace LlamaCpp
         public delegate void ResponseGeneratedDelegate(string response);
         public event ResponseGeneratedDelegate OnResponseGenerated;
 
-        IntPtr _llamaModel = IntPtr.Zero;
-        IntPtr _llamaVocab = IntPtr.Zero;
-        IntPtr _llamaContext = IntPtr.Zero;
+        protected IntPtr _llamaModel = IntPtr.Zero;
+        protected IntPtr _llamaVocab = IntPtr.Zero;
+        protected IntPtr _llamaContext = IntPtr.Zero;
         IntPtr _chatTemplate = IntPtr.Zero;
 
         Sampling.common_sampler common_sampler;
@@ -80,7 +80,7 @@ namespace LlamaCpp
         int n_past = 0;
         int n_keep = 1;
 
-        List<Chat.common_chat_msg> chat_msgs = new();
+        protected List<Chat.common_chat_msg> chat_msgs = new();
 
         private void PostResponseStream(string response)
         {

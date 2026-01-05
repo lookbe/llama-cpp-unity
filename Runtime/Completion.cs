@@ -65,10 +65,10 @@ namespace LlamaCpp
         public delegate void ResponseGeneratedDelegate(string response);
         public event ResponseGeneratedDelegate OnResponseGenerated;
 
-        IntPtr _llamaModel = IntPtr.Zero;
-        IntPtr _llamaVocab = IntPtr.Zero;
-        IntPtr _llamaContext = IntPtr.Zero;
-        IntPtr _llamaSampler = IntPtr.Zero;
+        protected IntPtr _llamaModel = IntPtr.Zero;
+        protected IntPtr _llamaVocab = IntPtr.Zero;
+        protected IntPtr _llamaContext = IntPtr.Zero;
+        protected IntPtr _llamaSampler = IntPtr.Zero;
 
         uint n_ctx = 4096;
         int n_batch = 512;
