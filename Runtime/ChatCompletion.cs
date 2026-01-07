@@ -134,6 +134,50 @@ namespace LlamaCpp
 
                 _llamaVocab = Native.llama_model_get_vocab(_llamaModel);
 
+                // warmup
+                {
+                    Native.llama_set_warmup(_llamaContext, true);
+
+                    List<int> tmp = new List<int>();
+                    int bos = Native.llama_vocab_bos(_llamaVocab);
+                    int eos = Native.llama_vocab_eos(_llamaVocab);
+
+                    // some models (e.g. T5) don't have a BOS token
+                    if (bos != -1)
+                    {
+                        tmp.Add(bos);
+                    }
+                    if (eos != -1)
+                    {
+                        tmp.Add(eos);
+                    }
+                    if (tmp.Count == 0)
+                    {
+                        tmp.Add(0);
+                    }
+
+                    if (Native.llama_model_has_encoder(_llamaModel))
+                    {
+                        Native.llama_encode(_llamaContext, Native.llama_batch_get_one(tmp.ToArray(), tmp.Count));
+                        int decoder_start_token_id = Native.llama_model_decoder_start_token(_llamaModel);
+                        if (decoder_start_token_id == -1)
+                        {
+                            decoder_start_token_id = bos;
+                        }
+                        tmp.Clear();
+                        tmp.Add(decoder_start_token_id);
+                    }
+                    if (Native.llama_model_has_decoder(_llamaModel))
+                    {
+                        Native.llama_decode(_llamaContext, Native.llama_batch_get_one(tmp.ToArray(), tmp.Count));
+                    }
+
+                    Native.llama_memory_clear(Native.llama_get_memory(_llamaContext), true);
+                    Native.llama_synchronize(_llamaContext);
+                    Native.llama_perf_context_reset(_llamaContext);
+                    Native.llama_set_warmup(_llamaContext, false);
+                }
+
                 _chatTemplate = Native.llama_model_chat_template(_llamaModel, null);
                 string template = Marshal.PtrToStringUTF8(_chatTemplate);
 

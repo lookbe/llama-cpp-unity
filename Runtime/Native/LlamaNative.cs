@@ -166,6 +166,17 @@ namespace LlamaCpp
         [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
         public static extern void llama_model_free(IntPtr model);
 
+        [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool llama_model_has_encoder(IntPtr model);
+
+        [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool llama_model_has_decoder(IntPtr model);
+
+        [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int llama_model_decoder_start_token(IntPtr model);
+
         // context
         [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
         public static extern llama_context_params llama_context_default_params();
@@ -181,6 +192,15 @@ namespace LlamaCpp
 
         [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr llama_get_model(IntPtr ctx);
+
+        [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void llama_set_warmup(IntPtr ctx, [MarshalAs(UnmanagedType.I1)] bool warmup);
+
+        [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void llama_synchronize(IntPtr ctx);
+
+        [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void llama_perf_context_reset(IntPtr ctx);
 
 
         // memory
