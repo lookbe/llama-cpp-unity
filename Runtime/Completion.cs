@@ -304,7 +304,6 @@ namespace LlamaCpp
             Native.llama_sampler_chain_add(llamaSampler, Native.llama_sampler_init_typical(sampling.typ_p, sampling.min_keep));
             Native.llama_sampler_chain_add(llamaSampler, Native.llama_sampler_init_temp_ext(sampling.temp, sampling.dynatemp_range, sampling.dynatemp_exponent));
             Native.llama_sampler_chain_add(llamaSampler, Native.llama_sampler_init_xtc(sampling.xtc_probability, sampling.xtc_threshold, sampling.min_keep, sampling.seed));
-            Native.llama_sampler_chain_add(llamaSampler, Native.llama_sampler_init_infill(_llamaVocab));
             Native.llama_sampler_chain_add(llamaSampler, Native.llama_sampler_init_penalties(sampling.penalty_last_n, sampling.penalty_repeat, sampling.penalty_freq, sampling.penalty_present));
             Native.llama_sampler_chain_add(llamaSampler, Native.llama_sampler_init_top_n_sigma(sampling.top_n_sigma));
             Native.llama_sampler_chain_add(llamaSampler, Native.llama_sampler_init_dist(sampling.seed)); // this must be last
