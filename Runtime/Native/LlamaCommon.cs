@@ -25,6 +25,11 @@ namespace LlamaCpp
             public float penalty_repeat;
             public float penalty_freq;
             public float penalty_present;
+            public float dry_multiplier;
+            public float dry_base;
+            public int dry_allowed_length;
+            public int dry_penalty_last_n;
+
             public float top_n_sigma;
 
             public static common_params_sampling create_default()
@@ -48,6 +53,10 @@ namespace LlamaCpp
                     penalty_repeat = 1.00f,
                     penalty_freq = 0.00f,
                     penalty_present = 0.00f,
+                    dry_multiplier = 0.0f,
+                    dry_base = 1.75f,
+                    dry_allowed_length = 2,
+                    dry_penalty_last_n = -1,
                     top_n_sigma = -1.00f,
                 };
             }

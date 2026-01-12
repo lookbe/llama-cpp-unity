@@ -288,6 +288,9 @@ namespace LlamaCpp
         public static extern IntPtr llama_sampler_init_penalties(int penalty_last_n, float penalty_repeat, float penalty_freq, float penalty_present);
 
         [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr llama_sampler_init_infill(IntPtr vocab);
+
+        [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
         public static extern int llama_sampler_sample(IntPtr smpl, IntPtr ctx, int idx);
 
         [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
