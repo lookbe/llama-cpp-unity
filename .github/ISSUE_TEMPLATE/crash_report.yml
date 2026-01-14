@@ -22,41 +22,18 @@ body:
         - label: I understand that if these checks are not performed, my issue will be closed.
           required: true
 
-  - type: input
-    id: model_hash
-    attributes:
-      label: Model Hash
-      placeholder: Paste your SHA-256 hash here...
-    validations:
-      required: true
-
   - type: textarea
-    id: reproduction
+    id: crash_details
     attributes:
-      label: Reproduction Steps
+      label: Crash Details
       placeholder: |
-        1. Load model...
-        2. Execute command...
-        3. See crash at...
-    validations:
-      required: true
+        ## Environment Info
+        - **Model Name:**
+        - **Quantization:** (e.g., Q4_K_M)
+        - **OS:** (e.g., Windows 11, Ubuntu 22.04)
+        - **Hardware:** (e.g., 16GB RAM, RTX 3060)
 
-  - type: textarea
-    id: logs
-    attributes:
-      label: Error Logs / Stack Trace
-      description: Please paste the crash logs from your terminal.
-      render: shell
-    validations:
-      required: true
-
-  - type: dropdown
-    id: os
-    attributes:
-      label: Operating System
-      options:
-        - Windows
-        - Linux
-        - macOS
+        ## Logs / Screenshots
+        If applicable, add screenshots or paste the terminal error log here.
     validations:
       required: true
