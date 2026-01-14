@@ -1,34 +1,32 @@
-name: Bug Report
-description: Report a crash or error in the library
-title: "[Bug]: "
-labels: ["bug"]
+name: Crash Report
+description: Report a crash or unexpected termination
+title: "[Crash]: "
+labels: ["bug", "crash"]
 body:
-  - type: checkboxes
-    id: mandatory-checks
+  - type: markdown
     attributes:
-      label: Pre-submission Checklist
-      description: Please complete these steps before submitting. Issues that fail these checks will be closed.
-      options:
-        - label: I have verified my model's SHA-256 hash matches the Hugging Face source.
-          required: true
-        - label: I have tested the model with [llama-cpp-model-tester](https://github.com/lookbe/llama-cpp-model-tester/releases/tag/model-tester) and it works fine there.
-          required: true
-        - label: I understand that if I provide insufficient information, my issue may be closed.
-          required: true
+      value: |
+        ## 🛑 Stop! Before you submit
+        Please perform these checks. **If these steps fail, your model file is corrupted, not the library.**
 
-  - type: textarea
-    id: bug-description
+  - type: checkboxes
+    id: rules
     attributes:
-      label: Describe the bug
-      placeholder: A clear and concise description of what the crash/error is.
-    validations:
-      required: true
+      label: Rules & Verification
+      description: You must complete these steps before submitting.
+      options:
+        - label: I have verified that my local model SHA-256 hash matches the source on Hugging Face.
+          required: true
+        - label: I have tested this model with the [llama-cpp-model-tester](https://github.com/lookbe/llama-cpp-model-tester/releases/tag/model-tester) and it works fine.
+          required: true
+        - label: I understand that if these checks are not performed, my issue will be closed.
+          required: true
 
   - type: input
-    id: model-info
+    id: model_hash
     attributes:
-      label: Model Name & Hash
-      placeholder: e.g., Llama-3-8B-GGUF (Hash: a1b2c3d4...)
+      label: Model Hash
+      placeholder: Paste your SHA-256 hash here...
     validations:
       required: true
 
@@ -37,15 +35,28 @@ body:
     attributes:
       label: Reproduction Steps
       placeholder: |
-        1. Load model '...'
-        2. Set parameters '...'
-        3. See crash at '...'
+        1. Load model...
+        2. Execute command...
+        3. See crash at...
     validations:
       required: true
 
   - type: textarea
     id: logs
     attributes:
-      label: Logs or Error Output
-      description: Paste terminal logs or stack traces here.
+      label: Error Logs / Stack Trace
+      description: Please paste the crash logs from your terminal.
       render: shell
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Windows
+        - Linux
+        - macOS
+    validations:
+      required: true
