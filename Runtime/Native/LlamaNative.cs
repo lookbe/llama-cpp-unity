@@ -175,6 +175,10 @@ namespace LlamaCpp
         [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
         public static extern void llama_log_set(ggml_log_callback log_callback, IntPtr user_data);
 
+        [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern long llama_max_devices();
+
+
         // backend
         [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
         public static extern void llama_backend_init();

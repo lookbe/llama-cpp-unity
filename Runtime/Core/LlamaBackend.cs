@@ -42,6 +42,8 @@ namespace LlamaCpp
         {
             if (count == 0)
             {
+                Native.llama_max_devices();
+
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
                 string packagePath = NativeDllPath.GetDirectory("llama.dll");
                 Native.ggml_backend_load(Path.Join(packagePath, "ggml-cpu-x64.dll"));
