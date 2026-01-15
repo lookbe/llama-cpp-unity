@@ -1,10 +1,26 @@
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
+using UnityEditor.PackageManager;
+
 
 namespace LlamaCpp
 {
     public unsafe static class Native
     {
+        private const string GgmlDll = "ggml";
+
+        [DllImport(GgmlDll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ggml_backend_load_all();
+
+        [DllImport(GgmlDll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ggml_backend_load_all_from_path([MarshalAs(UnmanagedType.LPUTF8Str)] string dir_path);
+
+        [DllImport(GgmlDll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void ggml_backend_load([MarshalAs(UnmanagedType.LPUTF8Str)] string path);
+
+
         private const string LlamaDll = "llama";
 
         [StructLayout(LayoutKind.Sequential)]
@@ -55,11 +71,16 @@ namespace LlamaCpp
             // Keep the booleans together to avoid misalignment during copy-by-value.
             [MarshalAs(UnmanagedType.I1)] public bool vocab_only;      // only load the vocabulary, no weights
             [MarshalAs(UnmanagedType.I1)] public bool use_mmap;        // use mmap if possible
+            [MarshalAs(UnmanagedType.I1)] public bool use_direct_io;   // use direct io, takes precedence over use_mmap
             [MarshalAs(UnmanagedType.I1)] public bool use_mlock;       // force system to keep model in RAM
             [MarshalAs(UnmanagedType.I1)] public bool check_tensors;   // validate model tensor data
             [MarshalAs(UnmanagedType.I1)] public bool use_extra_bufts; // use extra buffer types (used for weight repacking)
             [MarshalAs(UnmanagedType.I1)] public bool no_host;         // bypass host buffer allowing extra buffers to be used
+            [MarshalAs(UnmanagedType.I1)] public bool no_alloc;        // only load metadata and simulate memory allocations
         }
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void ggml_log_callback(int level, string text, IntPtr user_data);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]
@@ -117,6 +138,8 @@ namespace LlamaCpp
             [MarshalAs(UnmanagedType.I1)] public bool kv_unified;  // use a unified buffer across the input sequences when computing the attention
                                                                    // try to disable when n_seq_max > 1 for improved performance when the sequences do not share a large prefix
                                                                    // ref: https://github.com/ggml-org/llama.cpp/pull/14363
+            public IntPtr samplers;
+            public long n_samplers;
         };
 
         [StructLayout(LayoutKind.Sequential)]
@@ -148,6 +171,9 @@ namespace LlamaCpp
             public long selected;   // int64_t
             public byte sorted;
         }
+
+        [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void llama_log_set(ggml_log_callback log_callback, IntPtr user_data);
 
         // backend
         [DllImport(LlamaDll, CallingConvention = CallingConvention.Cdecl)]
