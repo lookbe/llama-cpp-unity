@@ -6,16 +6,16 @@ using UnityEngine;
 
 namespace LlamaCpp
 {
-#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-    public static class NativeDllPath
+    public static class NativeLibraryPath
     {
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern IntPtr GetModuleHandle(string lpModuleName);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern uint GetModuleFileName(IntPtr hModule, StringBuilder lpFilename, int nSize);
 
-        public static string GetDirectory(string dllName)
+        public static string GetDllPath(string dllName)
         {
             IntPtr hModule = GetModuleHandle(dllName);
             if (hModule == IntPtr.Zero)
@@ -26,8 +26,18 @@ namespace LlamaCpp
 
             return Path.GetDirectoryName(sb.ToString());
         }
-    }
+#elif UNITY_ANDROID && !UNITY_EDITOR
+        public static string GetAndroidNativeLibraryPath() 
+        {
+            using (var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            {
+                var activity = player.GetStatic<AndroidJavaObject>("currentActivity");
+                var info = activity.Call<AndroidJavaObject>("getApplicationInfo");
+                return info.Get<string>("nativeLibraryDir");
+            }
+        }
 #endif
+    }
 
     public static class Backend
     {
@@ -45,9 +55,13 @@ namespace LlamaCpp
                 Native.llama_max_devices();
 
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-                string packagePath = NativeDllPath.GetDirectory("llama.dll");
-                Native.ggml_backend_load(Path.Join(packagePath, "ggml-cpu-x64.dll"));
-                Native.ggml_backend_load(Path.Join(packagePath, "ggml-vulkan.dll"));
+                string packagePath = NativeLibraryPath.GetDllPath("llama.dll");
+                Native.ggml_backend_load_all_from_path(packagePath);
+#elif UNITY_ANDROID && !UNITY_EDITOR
+                string packagePath = NativeLibraryPath.GetAndroidNativeLibraryPath();
+                Native.ggml_backend_load_all_from_path(packagePath);
+#else
+                Native.ggml_backend_load_all();
 #endif
 
                 Native.llama_backend_init();
