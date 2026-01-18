@@ -168,7 +168,7 @@ namespace LlamaCpp
             public string Prompt = string.Empty;
         }
 
-        public void Prompt(string prompt)
+        public virtual void Prompt(string prompt)
         {
             if (string.IsNullOrEmpty(prompt))
             {
@@ -242,6 +242,11 @@ namespace LlamaCpp
         public virtual int[] Tokenize(string prompt)
         {
             return Common.common_tokenize(_llamaVocab, prompt, true, true);
+        }
+
+        public virtual string Detokenize(int token)
+        {
+            return Common.common_token_to_piece(_llamaVocab, token, false);
         }
 
         protected virtual bool EndGeneration(int token, int generated_token_count)
